@@ -3,49 +3,45 @@ package service
 import (
 	"context"
 	"math/rand"
-	"new-shortner/internal/domain"
+	"net/url"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
-type UrlRepository interface {
-	Create(ctx context.Context, book domain.URL) error
-	GetByID(ctx context.Context, id uuid.UUID) (domain.URL, error)
-	GetAll(ctx context.Context) ([]domain.URL, error)
-	Delete(ctx context.Context, id uuid.UUID) error
+type URLRepository interface {
+	Create(ctx context.Context, original, short string) error
+	GetOriginalByShort(ctx context.Context, short string) (string, error)
 }
 
-type Urls struct {
-	repo UrlRepository
+type URLs struct {
+	repo URLRepository
 }
 
-func NewUrls(repo UrlRepository) *Urls {
-	return &Urls{
+func NewURLs(repo URLRepository) *URLs {
+	return &URLs{
 		repo: repo,
 	}
 }
 
-func (u *Urls) Create(ctx context.Context, url domain.URL) error {
-	return u.repo.Create(ctx, url)
-}
+func (u *URLs) Create(ctx context.Context, original string) (string, error) {
+	_, err := url.ParseRequestURI(original)
+	if err != nil {
+		return "", err
+	}
 
-func (u *Urls) GetByID(ctx context.Context, id uuid.UUID) (domain.URL, error) {
-	return u.repo.GetByID(ctx, id)
-}
-
-func (u *Urls) GetAll(ctx context.Context) ([]domain.URL, error) {
-	return u.repo.GetAll(ctx)
-}
-
-func (u *Urls) Delete(ctx context.Context, id uuid.UUID) error {
-	return u.repo.Delete(ctx, id)
-}
-
-func (u *Urls) ShortenUrl(_ context.Context) string {
 	src := rand.NewSource(time.Now().UnixNano())
-	return GenerateURLToken(10, src)
+	short := GenerateURLToken(10, src)
+
+	err = u.repo.Create(ctx, original, short)
+	if err != nil {
+		return "", err
+	}
+
+	return short, nil
+}
+
+func (u *URLs) GetOriginalByShort(ctx context.Context, short string) (string, error) {
+	return u.repo.GetOriginalByShort(ctx, short)
 }
 
 // GenerateURLToken generates random base64URL string by given length

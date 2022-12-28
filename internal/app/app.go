@@ -29,8 +29,8 @@ func New(cfg config.Config) (*App, error) {
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file for save/load urls")
 	flag.Parse()
 
-	urlsRepo := inmemory.NewUrls(lg)
-	urlsService := service.NewUrls(urlsRepo)
+	urlsRepo := inmemory.NewURLs(lg)
+	urlsService := service.NewURLs(urlsRepo)
 	handler := rest.NewHandler(urlsService, cfg)
 
 	srv := &http.Server{
