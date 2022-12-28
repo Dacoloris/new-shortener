@@ -8,16 +8,16 @@ import (
 	"time"
 )
 
-type UrlRepository interface {
+type URLRepository interface {
 	Create(ctx context.Context, original, short string) error
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
 }
 
 type URLs struct {
-	repo UrlRepository
+	repo URLRepository
 }
 
-func NewURLs(repo UrlRepository) *URLs {
+func NewURLs(repo URLRepository) *URLs {
 	return &URLs{
 		repo: repo,
 	}
