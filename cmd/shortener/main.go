@@ -24,7 +24,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-func a() {
-	//TODO
-}
