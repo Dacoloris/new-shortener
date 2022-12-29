@@ -4,13 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	adapter "github.com/gwatts/gin-adapter"
 )
 
 func (h *Handler) InitRouter() *gin.Engine {
 	r := gin.Default()
 
-	r.Use(GzipInput(), adapter.Wrap(GzipOutput))
+	//r.Use(GzipInput(), adapter.Wrap(GzipOutput))
 
 	plainText := r.Group("/")
 	{
