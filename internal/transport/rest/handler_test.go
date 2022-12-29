@@ -214,7 +214,6 @@ func TestAPIShorten(t *testing.T) {
 			request:     "/api/shorten",
 			requestBody: `{"u":"http://google.com"}`,
 			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, original string) {
-				return
 			},
 			exceptedContentType: "application/json",
 			exceptedStatusCode:  http.StatusBadRequest,

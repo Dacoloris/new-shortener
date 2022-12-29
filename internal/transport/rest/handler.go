@@ -2,9 +2,11 @@ package rest
 
 import (
 	"context"
+	"encoding/json"
 	_ "encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"new-shortner/internal/config"
 
@@ -64,7 +66,13 @@ func (h *Handler) APIShorten(c *gin.Context) {
 	j := struct {
 		URL string `json:"url"`
 	}{}
-	if err := c.ShouldBindJSON(&j); err != nil || j.URL == "" {
+	b, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"result": err.Error()})
+		return
+	}
+	err = json.Unmarshal(b, &j)
+	if err != nil || j.URL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid json").Error()})
 		return
 	}
