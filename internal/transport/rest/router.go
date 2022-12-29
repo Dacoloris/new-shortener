@@ -4,10 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	adapter "github.com/gwatts/gin-adapter"
 )
 
 func (h *Handler) InitRouter() *gin.Engine {
 	r := gin.Default()
+
+	r.Use(GzipInput(), adapter.Wrap(GzipOutput))
 
 	plainText := r.Group("/")
 	{
@@ -26,18 +29,4 @@ func (h *Handler) InitRouter() *gin.Engine {
 	}
 
 	return r
-}
-
-func SetPlainTextHeader() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Add("Content-Type", "text/plain")
-		c.Next()
-	}
-}
-
-func SetJSONHeader() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Add("Content-Type", "application/json")
-		c.Next()
-	}
 }
