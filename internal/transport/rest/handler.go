@@ -3,7 +3,6 @@ package rest
 import (
 	"context"
 	"encoding/json"
-	_ "encoding/json"
 	"errors"
 	"fmt"
 	"io"
