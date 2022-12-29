@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	_ "encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -61,14 +62,14 @@ func (h *Handler) URLShortening(c *gin.Context) {
 
 func (h *Handler) APIShorten(c *gin.Context) {
 	j := struct {
-		Url string `json:"url"`
+		URL string `json:"url"`
 	}{}
-	if err := c.ShouldBindJSON(&j); err != nil || j.Url == "" {
+	if err := c.ShouldBindJSON(&j); err != nil || j.URL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid json").Error()})
 		return
 	}
 
-	short, err := h.URLsService.Create(c.Request.Context(), j.Url)
+	short, err := h.URLsService.Create(c.Request.Context(), j.URL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid url").Error()})
 		return
