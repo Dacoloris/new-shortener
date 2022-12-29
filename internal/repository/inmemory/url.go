@@ -41,3 +41,9 @@ func (u *URLs) GetOriginalByShort(ctx context.Context, short string) (string, er
 
 	return "", errors.New("not found")
 }
+
+func (u *URLs) AddRecordToStorage(original, short string) {
+	u.mu.Lock()
+	u.storage[short] = original
+	u.mu.Unlock()
+}
