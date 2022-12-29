@@ -2,61 +2,58 @@ package rest
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"new-shortner/internal/config"
-	"new-shortner/internal/domain"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
-type Urls interface {
-	Create(ctx context.Context, book domain.URL) error
-	GetByID(ctx context.Context, id uuid.UUID) (domain.URL, error)
-	GetAll(ctx context.Context) ([]domain.URL, error)
-	Delete(ctx context.Context, id uuid.UUID) error
-	ShortenUrl(ctx context.Context) string
+type URLs interface {
+	Create(ctx context.Context, original string) (string, error)
+	GetOriginalByShort(ctx context.Context, short string) (string, error)
 }
 
 type Handler struct {
-	UrlsService Urls
+	URLsService URLs
 	cfg         config.Config
 }
 
-func NewHandler(urls Urls, cfg config.Config) *Handler {
+func NewHandler(urls URLs, cfg config.Config) *Handler {
 	return &Handler{
-		UrlsService: urls,
+		URLsService: urls,
 		cfg:         cfg,
 	}
 }
 
 func (h *Handler) Redirect(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid id",
-		})
-	}
+	short := c.Param("id")
 
-	url, err := h.UrlsService.GetByID(c.Request.Context(), id)
+	original, err := h.URLsService.GetOriginalByShort(c.Request.Context(), short)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid id",
-		})
-	}
+		c.String(http.StatusBadRequest, errors.New("invalid id").Error())
 
-	c.Header("Location", url.Original)
-	c.Writer.WriteHeader(http.StatusTemporaryRedirect)
-}
-
-func (h *Handler) UrlShortening(c *gin.Context) {
-	var original string
-	err := c.ShouldBind(&original)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	short := h.UrlsService.ShortenUrl(c.Request.Context())
+	c.Header("Location", original)
+	c.Writer.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h *Handler) URLShortening(c *gin.Context) {
+	b, err := c.GetRawData()
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	original := string(b)
+
+	short, err := h.URLsService.Create(c.Request.Context(), original)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	c.String(http.StatusCreated, "%s/%s", h.cfg.BaseURL, short)
 }
