@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"new-shortner/internal/config"
 
@@ -56,4 +57,22 @@ func (h *Handler) URLShortening(c *gin.Context) {
 	}
 
 	c.String(http.StatusCreated, "%s/%s", h.cfg.BaseURL, short)
+}
+
+func (h *Handler) APIShorten(c *gin.Context) {
+	j := struct {
+		Url string `json:"url"`
+	}{}
+	if err := c.ShouldBindJSON(&j); err != nil || j.Url == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid json").Error()})
+		return
+	}
+
+	short, err := h.URLsService.Create(c.Request.Context(), j.Url)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid url").Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"result": fmt.Sprintf(`"%s/%s"`, h.cfg.BaseURL, short)})
 }

@@ -166,3 +166,87 @@ func TestURLShortening(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIShorten(t *testing.T) {
+	type mockBehavior func(m *mock_rest.MockURLs, ctx context.Context, short string)
+
+	testTable := []struct {
+		name                string
+		method              string
+		original            string
+		request             string
+		requestBody         string
+		mockBehavior        mockBehavior
+		exceptedContentType string
+		exceptedStatusCode  int
+		exceptedBody        string
+	}{
+		{
+			name:        "OK",
+			method:      http.MethodPost,
+			original:    "http://google.com",
+			request:     "/api/shorten",
+			requestBody: `{"url":"http://google.com"}`,
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, original string) {
+				m.EXPECT().Create(ctx, original).Return("short", nil)
+			},
+			exceptedContentType: "application/json",
+			exceptedStatusCode:  http.StatusCreated,
+			exceptedBody:        `{"result":"http://localhost:8080/short"}`,
+		},
+		{
+			name:        "invalid body url",
+			method:      http.MethodPost,
+			original:    "ht//google",
+			request:     "/api/shorten",
+			requestBody: `{"url":"ht//google"}`,
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, original string) {
+				m.EXPECT().Create(ctx, original).Return("", errors.New("invalid url"))
+			},
+			exceptedContentType: "application/json",
+			exceptedStatusCode:  http.StatusBadRequest,
+			exceptedBody:        `{"result":"invalid url"}`,
+		},
+		{
+			name:        "invalid json",
+			method:      http.MethodPost,
+			original:    "http://google.com",
+			request:     "/api/shorten",
+			requestBody: `{"u":"http://google.com"}`,
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, original string) {
+				return
+			},
+			exceptedContentType: "application/json",
+			exceptedStatusCode:  http.StatusBadRequest,
+			exceptedBody:        `{"result":"invalid json"}`,
+		},
+	}
+
+	for _, tt := range testTable {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ctx := context.Background()
+			repo := mock_rest.NewMockURLs(ctrl)
+			tt.mockBehavior(repo, ctx, tt.original)
+
+			cfg, err := config.New()
+			assert.NoError(t, err)
+			h := NewHandler(repo, cfg)
+
+			router := gin.New()
+			router.Use(SetJSONHeader())
+			router.POST("/api/shorten", h.APIShorten)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(tt.method, tt.request, bytes.NewBufferString(tt.requestBody))
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.exceptedContentType, w.Header().Get("Content-Type"))
+			assert.Equal(t, tt.exceptedStatusCode, w.Code)
+			assert.Equal(t, tt.exceptedBody, w.Body.String())
+		})
+	}
+}
