@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"net/url"
 	"strings"
@@ -26,7 +27,7 @@ func NewURLs(repo URLRepository) *URLs {
 func (u *URLs) Create(ctx context.Context, original string) (string, error) {
 	_, err := url.ParseRequestURI(original)
 	if err != nil {
-		return "", err
+		return "", errors.New("parse uri fail")
 	}
 
 	src := rand.NewSource(time.Now().UnixNano())

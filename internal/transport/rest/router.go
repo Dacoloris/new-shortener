@@ -8,7 +8,7 @@ import (
 
 func (h *Handler) InitRouter() *gin.Engine {
 	r := gin.Default()
-
+	r.Use(SetPlainTextHeader())
 	r.GET("/:id", h.Redirect)
 	r.POST("/", h.URLShortening)
 
@@ -17,4 +17,11 @@ func (h *Handler) InitRouter() *gin.Engine {
 	})
 
 	return r
+}
+
+func SetPlainTextHeader() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Add("Content-Type", "text/plain")
+		c.Next()
+	}
 }

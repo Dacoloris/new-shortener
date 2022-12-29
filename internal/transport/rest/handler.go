@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"new-shortner/internal/config"
 
@@ -30,9 +31,8 @@ func (h *Handler) Redirect(c *gin.Context) {
 
 	original, err := h.URLsService.GetOriginalByShort(c.Request.Context(), short)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid id",
-		})
+		c.String(http.StatusBadRequest, errors.New("invalid id").Error())
+
 		return
 	}
 
@@ -43,13 +43,17 @@ func (h *Handler) Redirect(c *gin.Context) {
 func (h *Handler) URLShortening(c *gin.Context) {
 	b, err := c.GetRawData()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	original := string(b)
 
-	short, _ := h.URLsService.Create(c.Request.Context(), original)
+	short, err := h.URLsService.Create(c.Request.Context(), original)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
 
 	c.String(http.StatusCreated, "%s/%s", h.cfg.BaseURL, short)
 }
