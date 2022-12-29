@@ -74,5 +74,5 @@ func (h *Handler) APIShorten(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"result": fmt.Sprintf(`"%s/%s"`, h.cfg.BaseURL, short)})
+	c.JSON(http.StatusCreated, gin.H{"result": fmt.Sprintf(`%s/%s`, h.cfg.BaseURL, short)})
 }
