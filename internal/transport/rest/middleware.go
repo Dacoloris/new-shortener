@@ -37,22 +37,23 @@ func GzipOutput(next http.Handler) http.Handler {
 	})
 }
 
-func GzipInput() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if !strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {
-			c.Next()
+func GzipInput(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
 		}
 
-		gz, err := gzip.NewReader(c.Request.Body)
+		gz, err := gzip.NewReader(r.Body)
 		if err != nil {
-			io.WriteString(c.Writer, err.Error())
+			io.WriteString(w, err.Error())
 			return
 		}
 		defer gz.Close()
-		c.Request.Body = gz
-		c.Header("Content-Encoding", "gzip")
-		c.Next()
-	}
+		r.Body = gz
+		w.Header().Set("Content-Encoding", "gzip")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func SetPlainTextHeader() gin.HandlerFunc {
