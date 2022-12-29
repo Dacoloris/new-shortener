@@ -3,8 +3,10 @@ package app
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"new-shortner/internal/config"
+	"new-shortner/internal/repository/file"
 	"new-shortner/internal/repository/inmemory"
 	"new-shortner/internal/service"
 	"new-shortner/internal/transport/rest"
@@ -29,8 +31,15 @@ func New(cfg config.Config) (*App, error) {
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file for save/load urls")
 	flag.Parse()
 
-	urlsRepo := inmemory.NewUrls(lg)
-	urlsService := service.NewUrls(urlsRepo)
+	var repo service.URLRepository
+	if cfg.FileStoragePath != "" {
+		if repo, err = file.New(cfg.FileStoragePath, lg); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		repo = inmemory.NewURLs(lg)
+	}
+	urlsService := service.NewURLs(repo)
 	handler := rest.NewHandler(urlsService, cfg)
 
 	srv := &http.Server{
