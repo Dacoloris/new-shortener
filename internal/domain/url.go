@@ -2,6 +2,6 @@ package domain
 
 type URL struct {
 	UserID   string `json:"-"`
-	Original string `json:"original"`
-	Short    string `json:"short"`
+	Short    string `json:"short_url"`
+	Original string `json:"original_url"`
 }
