@@ -4,14 +4,20 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"net/url"
+	urls "net/url"
+	"new-shortner/internal/domain"
 	"strings"
 	"time"
 )
 
+var (
+	ErrParseURI = errors.New("parse uri fail")
+)
+
 type URLRepository interface {
-	Create(ctx context.Context, original, short string) error
+	Create(ctx context.Context, url domain.URL) error
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
+	GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error)
 }
 
 type URLs struct {
@@ -24,25 +30,29 @@ func NewURLs(repo URLRepository) *URLs {
 	}
 }
 
-func (u *URLs) Create(ctx context.Context, original string) (string, error) {
-	_, err := url.ParseRequestURI(original)
+func (u *URLs) Create(ctx context.Context, url domain.URL) (string, error) {
+	_, err := urls.ParseRequestURI(url.Original)
 	if err != nil {
-		return "", errors.New("parse uri fail")
+		return "", ErrParseURI
 	}
 
 	src := rand.NewSource(time.Now().UnixNano())
-	short := GenerateURLToken(10, src)
+	url.Short = GenerateURLToken(10, src)
 
-	err = u.repo.Create(ctx, original, short)
+	err = u.repo.Create(ctx, url)
 	if err != nil {
 		return "", err
 	}
 
-	return short, nil
+	return url.Short, nil
 }
 
 func (u *URLs) GetOriginalByShort(ctx context.Context, short string) (string, error) {
 	return u.repo.GetOriginalByShort(ctx, short)
+}
+
+func (u *URLs) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
+	return u.repo.GetAllURLsByUserID(ctx, id)
 }
 
 // GenerateURLToken generates random base64URL string by given length

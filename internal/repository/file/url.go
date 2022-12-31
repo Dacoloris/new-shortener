@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"new-shortner/internal/domain"
 	"new-shortner/internal/repository/inmemory"
 	"os"
 
@@ -13,11 +14,6 @@ import (
 type Storage struct {
 	memoryMap *inmemory.URLs
 	encoder   *json.Encoder
-}
-
-type Record struct {
-	Original string `json:"original"`
-	Short    string `json:"short"`
 }
 
 func New(filename string, logger *zap.Logger) (*Storage, error) {
@@ -39,21 +35,26 @@ func New(filename string, logger *zap.Logger) (*Storage, error) {
 	return storage, nil
 }
 
-func (s *Storage) Create(ctx context.Context, original, short string) error {
-	err := s.memoryMap.Create(ctx, original, short)
+func (s *Storage) Create(ctx context.Context, url domain.URL) error {
+	err := s.memoryMap.Create(ctx, url)
 	if err != nil {
 		return err
 	}
-	err = s.encoder.Encode(Record{
-		original,
-		short,
-	})
+	record := struct {
+		domain.URL
+		UserID string `json:"user_id"`
+	}{}
+	err = s.encoder.Encode(record)
 
 	return err
 }
 
 func (s *Storage) GetOriginalByShort(ctx context.Context, short string) (string, error) {
 	return s.memoryMap.GetOriginalByShort(ctx, short)
+}
+
+func (s *Storage) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
+	return s.memoryMap.GetAllURLsByUserID(ctx, id)
 }
 
 func (s *Storage) LoadFromFile(filename string) error {
@@ -69,13 +70,21 @@ func (s *Storage) LoadFromBuff(buf io.Reader) error {
 	decoder := json.NewDecoder(buf)
 
 	for {
-		var record Record
+		var record struct {
+			domain.URL
+			UserID string `json:"user_id"`
+		}
 		if err := decoder.Decode(&record); err != nil {
 			if err == io.EOF {
 				return nil
 			}
 			return err
 		}
-		s.memoryMap.AddRecordToStorage(record.Original, record.Short)
+		url := domain.URL{
+			UserID:   record.UserID,
+			Original: record.Original,
+			Short:    record.Short,
+		}
+		s.memoryMap.AddRecordToStorage(url)
 	}
 }

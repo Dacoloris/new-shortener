@@ -8,13 +8,22 @@ import (
 	"io"
 	"net/http"
 	"new-shortner/internal/config"
+	"new-shortner/internal/domain"
+	"new-shortner/internal/transport/rest/cookie"
 
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	ErrInvalidID   = errors.New("invalid id")
+	ErrInvalidJSON = errors.New("invalid json")
+	ErrInvalidURL  = errors.New("invalid url")
+)
+
 type URLs interface {
-	Create(ctx context.Context, original string) (string, error)
+	Create(ctx context.Context, url domain.URL) (string, error)
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
+	GetAllURLsByUserID(ctx context.Context, UserID string) ([]domain.URL, error)
 }
 
 type Handler struct {
@@ -34,7 +43,7 @@ func (h *Handler) Redirect(c *gin.Context) {
 
 	original, err := h.URLsService.GetOriginalByShort(c.Request.Context(), short)
 	if err != nil {
-		c.String(http.StatusBadRequest, errors.New("invalid id").Error())
+		c.String(http.StatusBadRequest, ErrInvalidID.Error())
 
 		return
 	}
@@ -49,10 +58,17 @@ func (h *Handler) URLShortening(c *gin.Context) {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
+	id, err := cookie.ReadEncrypted(c.Request, "id")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Это здесь" + err.Error()})
+		return
+	}
+	url := domain.URL{
+		UserID:   id,
+		Original: string(b),
+	}
 
-	original := string(b)
-
-	short, err := h.URLsService.Create(c.Request.Context(), original)
+	short, err := h.URLsService.Create(c.Request.Context(), url)
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
@@ -72,15 +88,40 @@ func (h *Handler) APIShorten(c *gin.Context) {
 	}
 	err = json.Unmarshal(b, &j)
 	if err != nil || j.URL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid json").Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"result": ErrInvalidJSON.Error()})
 		return
 	}
 
-	short, err := h.URLsService.Create(c.Request.Context(), j.URL)
+	id, err := cookie.ReadEncrypted(c.Request, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errors.New("invalid url").Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	url := domain.URL{
+		UserID:   id,
+		Original: j.URL,
+	}
+
+	short, err := h.URLsService.Create(c.Request.Context(), url)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": ErrInvalidURL.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"result": fmt.Sprintf(`%s/%s`, h.cfg.BaseURL, short)})
+}
+
+func (h *Handler) GetAllURLsForUser(c *gin.Context) {
+	id, err := cookie.ReadEncrypted(c.Request, "id")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	urls, err := h.URLsService.GetAllURLsByUserID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, urls)
 }
