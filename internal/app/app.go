@@ -29,6 +29,7 @@ func New(cfg config.Config) (*App, error) {
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url for short urls")
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file for save/load urls")
+	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "dsn for database")
 	flag.Parse()
 
 	var repo service.URLRepository

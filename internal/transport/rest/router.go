@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"net/http"
 	"new-shortner/internal/transport/rest/cookie"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +17,7 @@ func (h *Handler) InitRouter() *gin.Engine {
 		plainText.Use(SetPlainTextHeader())
 		plainText.GET("/:id", h.Redirect)
 		plainText.POST("/", h.URLShortening)
+		plainText.GET("/ping", h.PingDB)
 	}
 
 	api := r.Group("/api")
@@ -25,9 +25,6 @@ func (h *Handler) InitRouter() *gin.Engine {
 		api.Use(SetJSONHeader())
 		api.POST("/shorten", h.APIShorten)
 		api.GET("/user/urls", h.GetAllURLsForUser)
-		api.GET("/ping", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "pong"})
-		})
 	}
 
 	return r
