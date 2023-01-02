@@ -17,7 +17,7 @@ func (h *Handler) InitRouter() *gin.Engine {
 		plainText.Use(SetPlainTextHeader())
 		plainText.GET("/:id", h.Redirect)
 		plainText.POST("/", h.URLShortening)
-		plainText.GET("/ping", h.PingDB)
+		plainText.GET("/ping", h.Ping)
 	}
 
 	api := r.Group("/api")

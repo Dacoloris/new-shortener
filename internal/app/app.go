@@ -1,6 +1,7 @@
 package app
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -8,10 +9,13 @@ import (
 	"new-shortner/internal/config"
 	"new-shortner/internal/repository/file"
 	"new-shortner/internal/repository/inmemory"
+	"new-shortner/internal/repository/psql"
+	"new-shortner/internal/repository/psql/initdb"
 	"new-shortner/internal/service"
 	"new-shortner/internal/transport/rest"
 	"new-shortner/pkg/logger"
 
+	_ "github.com/jackc/pgx"
 	"go.uber.org/zap"
 )
 
@@ -33,13 +37,25 @@ func New(cfg config.Config) (*App, error) {
 	flag.Parse()
 
 	var repo service.URLRepository
-	if cfg.FileStoragePath != "" {
+	switch {
+	case cfg.DatabaseDSN != "":
+		db, err := sql.Open("postgres", cfg.DatabaseDSN)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.Close()
+		if err = initdb.InitDB(db); err != nil {
+			return nil, err
+		}
+		repo = psql.New(db, cfg.DatabaseDSN)
+	case cfg.FileStoragePath != "":
 		if repo, err = file.New(cfg.FileStoragePath, lg); err != nil {
 			log.Fatal(err)
 		}
-	} else {
+	default:
 		repo = inmemory.NewURLs(lg)
 	}
+
 	urlsService := service.NewURLs(repo)
 	handler := rest.NewHandler(urlsService, cfg)
 

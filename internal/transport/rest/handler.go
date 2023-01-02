@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"new-shortner/internal/config"
 	"new-shortner/internal/domain"
-	"new-shortner/internal/repository/psql"
 	"new-shortner/internal/transport/rest/cookie"
+	"new-shortner/internal/transport/rest/ping"
 
 	"github.com/gin-gonic/gin"
 )
@@ -127,8 +127,8 @@ func (h *Handler) GetAllURLsForUser(c *gin.Context) {
 	c.JSON(http.StatusOK, urls)
 }
 
-func (h *Handler) PingDB(c *gin.Context) {
-	err := psql.PingDB(h.cfg.DatabaseDSN)
+func (h *Handler) Ping(c *gin.Context) {
+	err := ping.Ping(c.Request.Context(), h.cfg.DatabaseDSN)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 	}

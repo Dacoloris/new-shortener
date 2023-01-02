@@ -1,21 +1,72 @@
 package psql
 
 import (
+	"context"
 	"database/sql"
-
-	_ "github.com/jackc/pgx"
+	"errors"
+	"new-shortner/internal/domain"
 )
 
-func PingDB(dsn string) error {
-	db, err := sql.Open("postgres", dsn)
+var (
+	ErrNotFound = errors.New("not found")
+)
+
+type Storage struct {
+	conn *sql.DB
+	dsn  string
+}
+
+func New(db *sql.DB, dsn string) *Storage {
+	return &Storage{
+		conn: db,
+		dsn:  dsn,
+	}
+}
+
+func (s *Storage) Create(ctx context.Context, url domain.URL) error {
+	query := `INSERT INTO urls (original_url, short_url)
+				  VALUES ($1, $2)`
+
+	_, err := s.conn.ExecContext(ctx, query, url.Original, url.Short)
+
+	return err
+}
+
+func (s *Storage) GetOriginalByShort(ctx context.Context, shortURL string) (string, error) {
+	query := `SELECT original_url FROM urls WHERE short_url=$1 LIMIT 1`
+	row := s.conn.QueryRowContext(ctx, query, shortURL)
+	var original string
+	row.Scan(&original)
+	if original == "" {
+		return "", ErrNotFound
+	}
+
+	return original, nil
+}
+
+func (s *Storage) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
+	res := make([]domain.URL, 0)
+
+	query := `SELECT original_url, short_url FROM urls WHERE id=$1`
+	rows, err := s.conn.QueryContext(ctx, query)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer db.Close()
+	defer rows.Close()
 
-	if err = db.Ping(); err != nil {
-		return err
+	for rows.Next() {
+		var u domain.URL
+		err = rows.Scan(&u.Original, &u.Short)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, u)
 	}
 
-	return nil
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return res, nil
 }
