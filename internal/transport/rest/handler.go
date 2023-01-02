@@ -124,7 +124,12 @@ func (h *Handler) GetAllURLsForUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, urls)
+
+	if len(urls) != 0 {
+		c.JSON(http.StatusOK, urls)
+	} else {
+		c.JSON(http.StatusNoContent, urls)
+	}
 }
 
 func (h *Handler) Ping(c *gin.Context) {
