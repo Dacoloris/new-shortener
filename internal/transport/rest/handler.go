@@ -64,6 +64,7 @@ func (h *Handler) URLShortening(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	url := domain.URL{
 		UserID:   id,
 		Original: string(b),
@@ -114,6 +115,7 @@ func (h *Handler) APIShorten(c *gin.Context) {
 
 func (h *Handler) GetAllURLsForUser(c *gin.Context) {
 	id, err := cookie.ReadEncrypted(c.Request, "id")
+	fmt.Println(id)
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

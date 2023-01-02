@@ -52,6 +52,9 @@ func (u *URLs) GetOriginalByShort(ctx context.Context, short string) (string, er
 }
 
 func (u *URLs) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
+	if id == "" {
+		return []domain.URL{}, nil
+	}
 	return u.repo.GetAllURLsByUserID(ctx, id)
 }
 

@@ -3,6 +3,7 @@ package inmemory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"new-shortner/internal/domain"
 	"sync"
 
@@ -53,6 +54,7 @@ func (u *URLs) AddRecordToStorage(url domain.URL) {
 func (u *URLs) GetAllURLsByUserID(_ context.Context, id string) ([]domain.URL, error) {
 	res := make([]domain.URL, 0)
 	u.mu.RLock()
+	fmt.Println(u.storage)
 	for _, url := range u.storage {
 		if url.UserID == id {
 			res = append(res, url)

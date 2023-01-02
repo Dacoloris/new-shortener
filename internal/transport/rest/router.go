@@ -10,7 +10,7 @@ import (
 func (h *Handler) InitRouter() *gin.Engine {
 	r := gin.Default()
 
-	r.Use(adapter.Wrap(GzipInput), adapter.Wrap(GzipOutput), cookie.CheckCookie)
+	r.Use(cookie.CheckCookie(), adapter.Wrap(GzipInput), adapter.Wrap(GzipOutput))
 
 	plainText := r.Group("/")
 	{

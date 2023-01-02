@@ -22,16 +22,17 @@ var (
 	ErrInvalidValue = errors.New("invalid cookie value")
 )
 
-func Write(w http.ResponseWriter, cookie http.Cookie) error {
+func Write(w http.ResponseWriter, cookie http.Cookie) (http.Cookie, error) {
 	cookie.Value = base64.URLEncoding.EncodeToString([]byte(cookie.Value))
 
 	if len(cookie.String()) > 4096 {
-		return ErrValueTooLong
+		return http.Cookie{}, ErrValueTooLong
 	}
 
+	fmt.Println("WRITE: COOKIE", cookie)
 	http.SetCookie(w, &cookie)
 
-	return nil
+	return cookie, nil
 }
 
 func Read(r *http.Request, name string) (string, error) {
@@ -48,21 +49,21 @@ func Read(r *http.Request, name string) (string, error) {
 	return string(value), nil
 }
 
-func WriteEncrypted(w http.ResponseWriter, cookie http.Cookie) error {
+func WriteEncrypted(w http.ResponseWriter, cookie http.Cookie) (http.Cookie, error) {
 	block, err := aes.NewCipher(secretKey)
 	if err != nil {
-		return err
+		return http.Cookie{}, err
 	}
 
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
-		return err
+		return http.Cookie{}, err
 	}
 
 	nonce := make([]byte, aesGCM.NonceSize())
 	_, err = io.ReadFull(rand.Reader, nonce)
 	if err != nil {
-		return err
+		return http.Cookie{}, err
 	}
 
 	plaintext := fmt.Sprintf("%s:%s", cookie.Name, cookie.Value)
@@ -116,24 +117,26 @@ func ReadEncrypted(r *http.Request, name string) (string, error) {
 	return value, nil
 }
 
-func CheckCookie(c *gin.Context) {
-	_, err := ReadEncrypted(c.Request, "id")
-	if errors.Is(err, http.ErrNoCookie) || errors.Is(err, ErrInvalidValue) {
-		cookie := http.Cookie{
-			Name:  "id",
-			Value: uuid.NewString(),
-			Path:  "/",
-		}
-		e := WriteEncrypted(c.Writer, cookie)
-		if e != nil {
-			c.String(http.StatusInternalServerError, e.Error())
+func CheckCookie() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		_, err := ReadEncrypted(c.Request, "id")
+		if errors.Is(err, http.ErrNoCookie) || errors.Is(err, ErrInvalidValue) {
+			cookie := http.Cookie{
+				Name:  "id",
+				Value: uuid.NewString(),
+				Path:  "/",
+			}
+			newCookie, e := WriteEncrypted(c.Writer, cookie)
+			if e != nil {
+				c.String(http.StatusInternalServerError, e.Error())
+				return
+			}
+			c.Request.AddCookie(&newCookie)
+		} else if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		return
-	} else if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
-		return
+		c.Next()
 	}
-	c.Next()
 }
