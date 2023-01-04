@@ -24,10 +24,10 @@ func New(db *sql.DB, dsn string) *Storage {
 }
 
 func (s *Storage) Create(ctx context.Context, url domain.URL) error {
-	query := `INSERT INTO urls (original_url, short_url)
-				  VALUES ($1, $2)`
+	query := `INSERT INTO urls (user_id, original_url, short_url)
+				  VALUES ($1, $2, $3)`
 
-	_, err := s.conn.ExecContext(ctx, query, url.Original, url.Short)
+	_, err := s.conn.ExecContext(ctx, query, url.UserID, url.Original, url.Short)
 
 	return err
 }
@@ -44,11 +44,11 @@ func (s *Storage) GetOriginalByShort(ctx context.Context, shortURL string) (stri
 	return original, nil
 }
 
-func (s *Storage) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
+func (s *Storage) GetAllURLsByUserID(ctx context.Context, userID string) ([]domain.URL, error) {
 	res := make([]domain.URL, 0)
 
-	query := `SELECT original_url, short_url FROM urls WHERE id=$1`
-	rows, err := s.conn.QueryContext(ctx, query)
+	query := `SELECT original_url, short_url FROM urls WHERE user_id=$1`
+	rows, err := s.conn.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -24,10 +24,10 @@ type App struct {
 	logger     *zap.Logger
 }
 
-func New(cfg config.Config) (*App, error) {
+func New(cfg config.Config) (*App, *sql.DB, error) {
 	lg, err := logger.New(true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "server address")
@@ -37,15 +37,15 @@ func New(cfg config.Config) (*App, error) {
 	flag.Parse()
 
 	var repo service.URLRepository
+	var db *sql.DB
 	switch {
 	case cfg.DatabaseDSN != "":
-		db, err := sql.Open("postgres", cfg.DatabaseDSN)
+		db, err = sql.Open("postgres", cfg.DatabaseDSN)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer db.Close()
 		if err = initdb.InitDB(db); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		repo = psql.New(db, cfg.DatabaseDSN)
 	case cfg.FileStoragePath != "":
@@ -55,7 +55,6 @@ func New(cfg config.Config) (*App, error) {
 	default:
 		repo = inmemory.NewURLs(lg)
 	}
-
 	urlsService := service.NewURLs(repo)
 	handler := rest.NewHandler(urlsService, cfg)
 
@@ -67,7 +66,7 @@ func New(cfg config.Config) (*App, error) {
 	return &App{
 		HTTPServer: srv,
 		logger:     lg,
-	}, nil
+	}, db, nil
 }
 
 func (app *App) Run() error {
