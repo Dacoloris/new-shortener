@@ -1,15 +1,21 @@
 package app
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"new-shortner/internal/config"
+	"new-shortner/internal/repository/file"
 	"new-shortner/internal/repository/inmemory"
+	"new-shortner/internal/repository/psql"
+	"new-shortner/internal/repository/psql/initdb"
 	"new-shortner/internal/service"
 	"new-shortner/internal/transport/rest"
 	"new-shortner/pkg/logger"
 
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -18,19 +24,38 @@ type App struct {
 	logger     *zap.Logger
 }
 
-func New(cfg config.Config) (*App, error) {
+func New(cfg config.Config) (*App, *sql.DB, error) {
 	lg, err := logger.New(true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "base url for short urls")
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file for save/load urls")
+	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "dsn for database")
 	flag.Parse()
 
-	urlsRepo := inmemory.NewUrls(lg)
-	urlsService := service.NewUrls(urlsRepo)
+	var repo service.URLRepository
+	var db *sql.DB
+	switch {
+	case cfg.DatabaseDSN != "":
+		db, err = sql.Open("postgres", cfg.DatabaseDSN)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err = initdb.InitDB(db); err != nil {
+			return nil, nil, err
+		}
+		repo = psql.New(db, cfg.DatabaseDSN)
+	case cfg.FileStoragePath != "":
+		if repo, err = file.New(cfg.FileStoragePath, lg); err != nil {
+			log.Fatal(err)
+		}
+	default:
+		repo = inmemory.NewURLs(lg)
+	}
+	urlsService := service.NewURLs(repo)
 	handler := rest.NewHandler(urlsService, cfg)
 
 	srv := &http.Server{
@@ -41,7 +66,7 @@ func New(cfg config.Config) (*App, error) {
 	return &App{
 		HTTPServer: srv,
 		logger:     lg,
-	}, nil
+	}, db, nil
 }
 
 func (app *App) Run() error {
