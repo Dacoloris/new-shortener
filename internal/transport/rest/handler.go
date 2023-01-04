@@ -143,4 +143,6 @@ func (h *Handler) Ping(c *gin.Context) {
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 	}
+
+	c.String(http.StatusOK, "")
 }
