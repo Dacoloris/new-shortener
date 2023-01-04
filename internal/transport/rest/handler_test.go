@@ -86,7 +86,7 @@ func TestRedirect(t *testing.T) {
 }
 
 func TestURLShortening(t *testing.T) {
-	type mockBehavior func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL)
+	type mockBehavior func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string)
 
 	testTable := []struct {
 		name                string
@@ -94,6 +94,7 @@ func TestURLShortening(t *testing.T) {
 		url                 domain.URL
 		request             string
 		requestBody         string
+		baseURL             string
 		mockBehavior        mockBehavior
 		exceptedContentType string
 		exceptedStatusCode  int
@@ -104,9 +105,10 @@ func TestURLShortening(t *testing.T) {
 			method:      http.MethodPost,
 			url:         domain.URL{UserID: "", Original: "http://google.com"},
 			request:     "/",
+			baseURL:     "http://localhost:8080",
 			requestBody: "http://google.com",
-			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
-				m.EXPECT().Create(ctx, url).Return("short", nil)
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string) {
+				m.EXPECT().Create(ctx, url, baseURL).Return("http://localhost:8080/short", nil)
 			},
 			exceptedContentType: "text/plain",
 			exceptedStatusCode:  http.StatusCreated,
@@ -117,9 +119,10 @@ func TestURLShortening(t *testing.T) {
 			method:      http.MethodPost,
 			url:         domain.URL{Original: "http/google.com"},
 			request:     "/",
+			baseURL:     "http://localhost:8080",
 			requestBody: "http/google.com",
-			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
-				m.EXPECT().Create(ctx, url).Return("", errors.New("parse uri fail"))
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string) {
+				m.EXPECT().Create(ctx, url, baseURL).Return("", errors.New("parse uri fail"))
 			},
 			exceptedContentType: "text/plain",
 			exceptedStatusCode:  http.StatusBadRequest,
@@ -130,9 +133,10 @@ func TestURLShortening(t *testing.T) {
 			method:      http.MethodPost,
 			url:         domain.URL{Original: ""},
 			request:     "/",
+			baseURL:     "http://localhost:8080",
 			requestBody: "",
-			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
-				m.EXPECT().Create(ctx, url).Return("", errors.New("parse uri fail"))
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string) {
+				m.EXPECT().Create(ctx, url, baseURL).Return("", errors.New("parse uri fail"))
 			},
 			exceptedContentType: "text/plain",
 			exceptedStatusCode:  http.StatusBadRequest,
@@ -147,7 +151,7 @@ func TestURLShortening(t *testing.T) {
 
 			ctx := context.Background()
 			repo := mock_rest.NewMockURLs(ctrl)
-			tt.mockBehavior(repo, ctx, tt.url)
+			tt.mockBehavior(repo, ctx, tt.url, tt.baseURL)
 
 			cfg, err := config.New()
 			assert.NoError(t, err)
@@ -170,13 +174,14 @@ func TestURLShortening(t *testing.T) {
 }
 
 func TestAPIShorten(t *testing.T) {
-	type mockBehavior func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL)
+	type mockBehavior func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string)
 
 	testTable := []struct {
 		name                string
 		method              string
 		url                 domain.URL
 		request             string
+		baseURL             string
 		requestBody         string
 		mockBehavior        mockBehavior
 		exceptedContentType string
@@ -188,9 +193,10 @@ func TestAPIShorten(t *testing.T) {
 			method:      http.MethodPost,
 			url:         domain.URL{Original: "http://google.com"},
 			request:     "/api/shorten",
+			baseURL:     "http://localhost:8080",
 			requestBody: `{"url":"http://google.com"}`,
-			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
-				m.EXPECT().Create(ctx, url).Return("short", nil)
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string) {
+				m.EXPECT().Create(ctx, url, baseURL).Return("http://localhost:8080/short", nil)
 			},
 			exceptedContentType: "application/json",
 			exceptedStatusCode:  http.StatusCreated,
@@ -201,9 +207,10 @@ func TestAPIShorten(t *testing.T) {
 			method:      http.MethodPost,
 			url:         domain.URL{Original: "ht//google"},
 			request:     "/api/shorten",
+			baseURL:     "http://localhost:8080",
 			requestBody: `{"url":"ht//google"}`,
-			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
-				m.EXPECT().Create(ctx, url).Return("", errors.New("invalid url"))
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string) {
+				m.EXPECT().Create(ctx, url, baseURL).Return("", errors.New("invalid url"))
 			},
 			exceptedContentType: "application/json",
 			exceptedStatusCode:  http.StatusBadRequest,
@@ -214,8 +221,9 @@ func TestAPIShorten(t *testing.T) {
 			method:      http.MethodPost,
 			url:         domain.URL{Original: "http://google.com"},
 			request:     "/api/shorten",
+			baseURL:     "http://localhost:8080",
 			requestBody: `{"u":"http://google.com"}`,
-			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
+			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL, baseURL string) {
 			},
 			exceptedContentType: "application/json",
 			exceptedStatusCode:  http.StatusBadRequest,
@@ -230,7 +238,7 @@ func TestAPIShorten(t *testing.T) {
 
 			ctx := context.Background()
 			repo := mock_rest.NewMockURLs(ctrl)
-			tt.mockBehavior(repo, ctx, tt.url)
+			tt.mockBehavior(repo, ctx, tt.url, tt.baseURL)
 
 			cfg, err := config.New()
 			assert.NoError(t, err)
