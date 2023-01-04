@@ -36,18 +36,18 @@ func (m *MockURLs) EXPECT() *MockURLsMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockURLs) Create(ctx context.Context, url domain.URL, baseURL string) (string, error) {
+func (m *MockURLs) Create(ctx context.Context, url domain.URL) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, url, baseURL)
+	ret := m.ctrl.Call(m, "Create", ctx, url)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockURLsMockRecorder) Create(ctx, url, baseURL interface{}) *gomock.Call {
+func (mr *MockURLsMockRecorder) Create(ctx, url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockURLs)(nil).Create), ctx, url, baseURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockURLs)(nil).Create), ctx, url)
 }
 
 // GetAllURLsByUserID mocks base method.

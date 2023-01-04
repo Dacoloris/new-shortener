@@ -22,7 +22,7 @@ var (
 )
 
 type URLs interface {
-	Create(ctx context.Context, url domain.URL, baseURL string) (string, error)
+	Create(ctx context.Context, url domain.URL) (string, error)
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
 	GetAllURLsByUserID(ctx context.Context, UserID string) ([]domain.URL, error)
 }
@@ -70,7 +70,7 @@ func (h *Handler) URLShortening(c *gin.Context) {
 		Original: string(b),
 	}
 
-	short, err := h.URLsService.Create(c.Request.Context(), url, h.cfg.BaseURL)
+	short, err := h.URLsService.Create(c.Request.Context(), url)
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
@@ -104,7 +104,7 @@ func (h *Handler) APIShorten(c *gin.Context) {
 		Original: j.URL,
 	}
 
-	short, err := h.URLsService.Create(c.Request.Context(), url, h.cfg.BaseURL)
+	short, err := h.URLsService.Create(c.Request.Context(), url)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": ErrInvalidURL.Error()})
 		return

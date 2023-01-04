@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/rand"
 	urls "net/url"
 	"new-shortner/internal/domain"
@@ -31,14 +30,14 @@ func NewURLs(repo URLRepository) *URLs {
 	}
 }
 
-func (u *URLs) Create(ctx context.Context, url domain.URL, baseURL string) (string, error) {
+func (u *URLs) Create(ctx context.Context, url domain.URL) (string, error) {
 	_, err := urls.ParseRequestURI(url.Original)
 	if err != nil {
 		return "", ErrParseURI
 	}
 
 	src := rand.NewSource(time.Now().UnixNano())
-	url.Short = fmt.Sprintf("%s/%s", baseURL, GenerateURLToken(10, src))
+	url.Short = GenerateURLToken(10, src)
 
 	err = u.repo.Create(ctx, url)
 	if err != nil {
