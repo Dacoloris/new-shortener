@@ -3,6 +3,8 @@ package ping
 import (
 	"context"
 	"database/sql"
+
+	_ "github.com/jackc/pgx"
 )
 
 func Ping(ctx context.Context, dsn string) error {
