@@ -70,7 +70,7 @@ func TestRedirect(t *testing.T) {
 			h := NewHandler(repo, cfg)
 
 			router := gin.New()
-			router.Use(SetPlainTextHeader(), cookie.CheckCookie)
+			router.Use(SetPlainTextHeader(), cookie.CheckCookie())
 			router.GET("/:id", h.Redirect)
 
 			w := httptest.NewRecorder()
@@ -102,7 +102,7 @@ func TestURLShortening(t *testing.T) {
 		{
 			name:        "OK",
 			method:      http.MethodPost,
-			url:         domain.URL{Original: "http://google.com"},
+			url:         domain.URL{UserID: "", Original: "http://google.com"},
 			request:     "/",
 			requestBody: "http://google.com",
 			mockBehavior: func(m *mock_rest.MockURLs, ctx context.Context, url domain.URL) {
@@ -154,7 +154,7 @@ func TestURLShortening(t *testing.T) {
 			h := NewHandler(repo, cfg)
 
 			router := gin.New()
-			router.Use(SetPlainTextHeader(), cookie.CheckCookie)
+			router.Use(SetPlainTextHeader())
 			router.POST("/", h.URLShortening)
 
 			w := httptest.NewRecorder()

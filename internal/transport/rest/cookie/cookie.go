@@ -29,7 +29,6 @@ func Write(w http.ResponseWriter, cookie http.Cookie) (http.Cookie, error) {
 		return http.Cookie{}, ErrValueTooLong
 	}
 
-	fmt.Println("WRITE: COOKIE", cookie)
 	http.SetCookie(w, &cookie)
 
 	return cookie, nil
