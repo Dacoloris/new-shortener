@@ -126,7 +126,12 @@ func (h *Handler) GetAllURLsForUser(c *gin.Context) {
 	}
 
 	if len(urls) != 0 {
-		c.JSON(http.StatusOK, urls)
+		res := make([]domain.URL, len(urls))
+		for i := 0; i < len(urls); i++ {
+			res[i] = urls[i]
+			res[i].Short = fmt.Sprintf("%s/%s", h.cfg.BaseURL, urls[i].Short)
+		}
+		c.JSON(http.StatusOK, res)
 	} else {
 		c.JSON(http.StatusNoContent, urls)
 	}

@@ -200,7 +200,7 @@ func TestAPIShorten(t *testing.T) {
 			},
 			exceptedContentType: "application/json",
 			exceptedStatusCode:  http.StatusCreated,
-			exceptedBody:        `{"result":"http://localhost:8080/short"}`,
+			exceptedBody:        `{"result":"short"}`,
 		},
 		{
 			name:        "invalid body url",
