@@ -76,7 +76,7 @@ func (h *Handler) URLShortening(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusCreated, short)
+	c.String(http.StatusCreated, fmt.Sprintf("%s/%s", h.cfg.BaseURL, short))
 }
 
 func (h *Handler) APIShorten(c *gin.Context) {
@@ -110,7 +110,7 @@ func (h *Handler) APIShorten(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"result": short})
+	c.JSON(http.StatusCreated, gin.H{"result": fmt.Sprintf("%s/%s", h.cfg.BaseURL, short)})
 }
 
 func (h *Handler) GetAllURLsForUser(c *gin.Context) {
@@ -144,5 +144,3 @@ func (h *Handler) Ping(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "")
 	}
 }
-
-// TODO
