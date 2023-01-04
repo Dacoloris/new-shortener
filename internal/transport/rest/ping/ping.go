@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	_ "github.com/jackc/pgx"
+	_ "github.com/lib/pq"
 )
 
 func Ping(ctx context.Context, dsn string) error {

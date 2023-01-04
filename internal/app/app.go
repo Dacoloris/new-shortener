@@ -15,7 +15,7 @@ import (
 	"new-shortner/internal/transport/rest"
 	"new-shortner/pkg/logger"
 
-	_ "github.com/jackc/pgx"
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
