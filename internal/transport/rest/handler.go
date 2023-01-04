@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"new-shortner/internal/config"
@@ -76,7 +75,7 @@ func (h *Handler) URLShortening(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusCreated, "%s/%s", h.cfg.BaseURL, short)
+	c.String(http.StatusCreated, short)
 }
 
 func (h *Handler) APIShorten(c *gin.Context) {
@@ -110,7 +109,7 @@ func (h *Handler) APIShorten(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"result": fmt.Sprintf(`%s/%s`, h.cfg.BaseURL, short)})
+	c.JSON(http.StatusCreated, gin.H{"result": short})
 }
 
 func (h *Handler) GetAllURLsForUser(c *gin.Context) {
