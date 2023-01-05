@@ -86,7 +86,10 @@ func (s *Storage) CreateBatch(ctx context.Context, urls []domain.URL) error {
 	}
 
 	for _, url := range urls {
-		stmt.ExecContext(ctx, query, url.UserID, url.Original, url.Short)
+		_, err = stmt.ExecContext(ctx, url.UserID, url.Original, url.Short)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()
