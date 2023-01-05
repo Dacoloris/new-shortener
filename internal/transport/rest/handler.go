@@ -115,13 +115,13 @@ func (h *Handler) APIShorten(c *gin.Context) {
 }
 
 func (h *Handler) GetAllURLsForUser(c *gin.Context) {
-	userID, err := cookie.ReadEncrypted(c.Request, "userID")
+	id, err := cookie.ReadEncrypted(c.Request, "id")
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	urls, err := h.URLsService.GetAllURLsByUserID(c.Request.Context(), userID)
+	urls, err := h.URLsService.GetAllURLsByUserID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
