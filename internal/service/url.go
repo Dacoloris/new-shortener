@@ -87,6 +87,7 @@ func (u *URLs) CreateBatch(
 		var elem domain.BatchPostResponse
 		elem.CorrelationID = req[i].CorrelationID
 		elem.Short = Urls[i].Short
+		res = append(res, elem)
 	}
 
 	return res, nil
