@@ -25,7 +25,7 @@ type URLs interface {
 	Create(ctx context.Context, url domain.URL) (string, error)
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
 	GetAllURLsByUserID(ctx context.Context, UserID string) ([]domain.URL, error)
-	CreateBatch(ctx context.Context, req []domain.BatchPostRequest, userID string) ([]domain.BatchPostResponse, error)
+	CreateBatch(ctx context.Context, req []domain.BatchPostRequest, userID, baseURL string) ([]domain.BatchPostResponse, error)
 }
 
 type Handler struct {
@@ -151,7 +151,7 @@ func (h *Handler) APIBatch(c *gin.Context) {
 		return
 	}
 
-	res, err := h.URLsService.CreateBatch(c.Request.Context(), req, userID)
+	res, err := h.URLsService.CreateBatch(c.Request.Context(), req, userID, h.cfg.BaseURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

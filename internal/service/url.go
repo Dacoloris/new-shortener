@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	urls "net/url"
 	"new-shortner/internal/domain"
@@ -63,6 +64,7 @@ func (u *URLs) CreateBatch(
 	ctx context.Context,
 	req []domain.BatchPostRequest,
 	userID string,
+	baseURL string,
 ) ([]domain.BatchPostResponse, error) {
 
 	Urls := make([]domain.URL, 0, len(req))
@@ -86,7 +88,7 @@ func (u *URLs) CreateBatch(
 	for i := 0; i < len(req); i++ {
 		var elem domain.BatchPostResponse
 		elem.CorrelationID = req[i].CorrelationID
-		elem.Short = Urls[i].Short
+		elem.Short = fmt.Sprintf("%s/%s", baseURL, Urls[i].Short)
 		res = append(res, elem)
 	}
 
