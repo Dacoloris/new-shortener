@@ -16,7 +16,6 @@ import (
 )
 
 var (
-	ErrInvalidID   = errors.New("invalid id")
 	ErrInvalidJSON = errors.New("invalid json")
 	ErrInvalidURL  = errors.New("invalid url")
 )
@@ -42,11 +41,9 @@ func NewHandler(urls URLs, cfg config.Config) *Handler {
 
 func (h *Handler) Redirect(c *gin.Context) {
 	short := c.Param("id")
-
 	original, err := h.URLsService.GetOriginalByShort(c.Request.Context(), short)
 	if err != nil {
-		c.String(http.StatusBadRequest, ErrInvalidID.Error())
-
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -145,7 +142,7 @@ func (h *Handler) APIBatch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	userID, err := cookie.ReadEncrypted(c.Request, "userID")
+	userID, err := cookie.ReadEncrypted(c.Request, "id")
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
