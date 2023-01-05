@@ -50,15 +50,23 @@ func (u *URLs) AddRecordToStorage(url domain.URL) {
 	u.mu.Unlock()
 }
 
-func (u *URLs) GetAllURLsByUserID(_ context.Context, id string) ([]domain.URL, error) {
+func (u *URLs) GetAllURLsByUserID(_ context.Context, userID string) ([]domain.URL, error) {
 	res := make([]domain.URL, 0)
 	u.mu.RLock()
 	for _, url := range u.storage {
-		if url.UserID == id {
+		if url.UserID == userID {
 			res = append(res, url)
 		}
 	}
 	u.mu.RUnlock()
 
 	return res, nil
+}
+
+func (u *URLs) CreateBatch(_ context.Context, urls []domain.URL) error {
+	for _, url := range urls {
+		u.AddRecordToStorage(url)
+	}
+
+	return nil
 }

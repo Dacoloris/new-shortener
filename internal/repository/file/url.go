@@ -16,6 +16,11 @@ type Storage struct {
 	encoder   *json.Encoder
 }
 
+type Record struct {
+	domain.URL
+	UserID string `json:"user_id"`
+}
+
 func New(filename string, logger *zap.Logger) (*Storage, error) {
 	storage := &Storage{
 		memoryMap: inmemory.NewURLs(logger),
@@ -40,10 +45,7 @@ func (s *Storage) Create(ctx context.Context, url domain.URL) error {
 	if err != nil {
 		return err
 	}
-	record := struct {
-		domain.URL
-		UserID string `json:"user_id"`
-	}{}
+	var record Record
 	err = s.encoder.Encode(record)
 
 	return err
@@ -53,10 +55,20 @@ func (s *Storage) GetOriginalByShort(ctx context.Context, short string) (string,
 	return s.memoryMap.GetOriginalByShort(ctx, short)
 }
 
-func (s *Storage) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
-	return s.memoryMap.GetAllURLsByUserID(ctx, id)
+func (s *Storage) GetAllURLsByUserID(ctx context.Context, userID string) ([]domain.URL, error) {
+	return s.memoryMap.GetAllURLsByUserID(ctx, userID)
 }
 
+func (s *Storage) CreateBatch(ctx context.Context, urls []domain.URL) error {
+	err := s.memoryMap.CreateBatch(ctx, urls)
+	if err != nil {
+		return err
+	}
+
+	var records []Record
+	err = s.encoder.Encode(records)
+	return err
+}
 func (s *Storage) LoadFromFile(filename string) error {
 	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {

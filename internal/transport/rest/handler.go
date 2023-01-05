@@ -25,6 +25,7 @@ type URLs interface {
 	Create(ctx context.Context, url domain.URL) (string, error)
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
 	GetAllURLsByUserID(ctx context.Context, UserID string) ([]domain.URL, error)
+	CreateBatch(ctx context.Context, req []domain.BatchPostRequest, userID string) ([]domain.BatchPostResponse, error)
 }
 
 type Handler struct {
@@ -114,13 +115,13 @@ func (h *Handler) APIShorten(c *gin.Context) {
 }
 
 func (h *Handler) GetAllURLsForUser(c *gin.Context) {
-	id, err := cookie.ReadEncrypted(c.Request, "id")
+	userID, err := cookie.ReadEncrypted(c.Request, "userID")
 	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	urls, err := h.URLsService.GetAllURLsByUserID(c.Request.Context(), id)
+	urls, err := h.URLsService.GetAllURLsByUserID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -136,6 +137,28 @@ func (h *Handler) GetAllURLsForUser(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusNoContent, urls)
 	}
+}
+
+func (h *Handler) APIBatch(c *gin.Context) {
+	var req []domain.BatchPostRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+
+	userID, err := cookie.ReadEncrypted(c.Request, "userID")
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	res, err := h.URLsService.CreateBatch(c.Request.Context(), req, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, res)
+
 }
 
 func (h *Handler) Ping(c *gin.Context) {

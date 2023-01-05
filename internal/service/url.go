@@ -18,6 +18,7 @@ type URLRepository interface {
 	Create(ctx context.Context, url domain.URL) error
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
 	GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error)
+	CreateBatch(ctx context.Context, urls []domain.URL) error
 }
 
 type URLs struct {
@@ -51,11 +52,44 @@ func (u *URLs) GetOriginalByShort(ctx context.Context, short string) (string, er
 	return u.repo.GetOriginalByShort(ctx, short)
 }
 
-func (u *URLs) GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error) {
-	if id == "" {
+func (u *URLs) GetAllURLsByUserID(ctx context.Context, userID string) ([]domain.URL, error) {
+	if userID == "" {
 		return []domain.URL{}, nil
 	}
-	return u.repo.GetAllURLsByUserID(ctx, id)
+	return u.repo.GetAllURLsByUserID(ctx, userID)
+}
+
+func (u *URLs) CreateBatch(
+	ctx context.Context,
+	req []domain.BatchPostRequest,
+	userID string,
+) ([]domain.BatchPostResponse, error) {
+
+	Urls := make([]domain.URL, 0, len(req))
+	src := rand.NewSource(time.Now().UnixNano())
+
+	for _, elem := range req {
+		var url domain.URL
+		url.UserID = userID
+		url.Original = elem.Original
+		url.Short = GenerateURLToken(10, src)
+		Urls = append(Urls, url)
+	}
+
+	err := u.repo.CreateBatch(ctx, Urls)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]domain.BatchPostResponse, 0, len(req))
+
+	for i := 0; i < len(req); i++ {
+		var elem domain.BatchPostResponse
+		elem.CorrelationID = req[i].CorrelationID
+		elem.Short = Urls[i].Short
+	}
+
+	return res, nil
 }
 
 // GenerateURLToken generates random base64URL string by given length

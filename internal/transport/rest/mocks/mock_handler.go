@@ -50,6 +50,21 @@ func (mr *MockURLsMockRecorder) Create(ctx, url interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockURLs)(nil).Create), ctx, url)
 }
 
+// CreateBatch mocks base method.
+func (m *MockURLs) CreateBatch(ctx context.Context, req []domain.BatchPostRequest, userID string) ([]domain.BatchPostResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBatch", ctx, req, userID)
+	ret0, _ := ret[0].([]domain.BatchPostResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBatch indicates an expected call of CreateBatch.
+func (mr *MockURLsMockRecorder) CreateBatch(ctx, req, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBatch", reflect.TypeOf((*MockURLs)(nil).CreateBatch), ctx, req, userID)
+}
+
 // GetAllURLsByUserID mocks base method.
 func (m *MockURLs) GetAllURLsByUserID(ctx context.Context, UserID string) ([]domain.URL, error) {
 	m.ctrl.T.Helper()

@@ -70,3 +70,25 @@ func (s *Storage) GetAllURLsByUserID(ctx context.Context, userID string) ([]doma
 
 	return res, nil
 }
+
+func (s *Storage) CreateBatch(ctx context.Context, urls []domain.URL) error {
+	tx, err := s.conn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `INSERT INTO urls (user_id, original_url, short_url)
+				  VALUES ($1, $2, $3)`
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	for _, url := range urls {
+		stmt.ExecContext(ctx, query, url.UserID, url.Original, url.Short)
+	}
+
+	tx.Commit()
+	return nil
+}

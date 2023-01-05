@@ -24,6 +24,7 @@ func (h *Handler) InitRouter() *gin.Engine {
 	{
 		api.Use(SetJSONHeader())
 		api.POST("/shorten", h.APIShorten)
+		api.POST("/shorten/batch", h.APIBatch)
 		api.GET("/user/urls", h.GetAllURLsForUser)
 	}
 
