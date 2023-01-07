@@ -58,7 +58,7 @@ func (h *Handler) URLShortening(c *gin.Context) {
 		return
 	}
 	id, err := cookie.ReadEncrypted(c.Request, "id")
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -98,7 +98,7 @@ func (h *Handler) APIShorten(c *gin.Context) {
 	}
 
 	id, err := cookie.ReadEncrypted(c.Request, "id")
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -118,7 +118,7 @@ func (h *Handler) APIShorten(c *gin.Context) {
 
 func (h *Handler) GetAllURLsForUser(c *gin.Context) {
 	id, err := cookie.ReadEncrypted(c.Request, "id")
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -148,7 +148,7 @@ func (h *Handler) APIBatch(c *gin.Context) {
 	}
 
 	userID, err := cookie.ReadEncrypted(c.Request, "id")
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
