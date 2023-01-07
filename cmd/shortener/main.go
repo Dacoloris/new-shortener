@@ -14,11 +14,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	a, err := app.New(cfg)
+	a, db, err := app.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	if db != nil {
+		defer db.Close()
+	}
 	err = a.Run()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
