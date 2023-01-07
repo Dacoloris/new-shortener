@@ -70,6 +70,11 @@ func (h *Handler) URLShortening(c *gin.Context) {
 
 	short, err := h.URLsService.Create(c.Request.Context(), url)
 	if err != nil {
+		var uc *domain.UniqueConstraintError
+		if errors.As(err, &uc) {
+			c.String(http.StatusConflict, fmt.Sprintf("%s/%s", h.cfg.BaseURL, short))
+			return
+		}
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -104,6 +109,11 @@ func (h *Handler) APIShorten(c *gin.Context) {
 
 	short, err := h.URLsService.Create(c.Request.Context(), url)
 	if err != nil {
+		var uc *domain.UniqueConstraintError
+		if errors.As(err, &uc) {
+			c.JSON(http.StatusConflict, gin.H{"result": fmt.Sprintf("%s/%s", h.cfg.BaseURL, short)})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"result": ErrInvalidURL.Error()})
 		return
 	}

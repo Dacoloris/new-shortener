@@ -45,7 +45,7 @@ func (u *URLs) Create(ctx context.Context, url domain.URL) (string, error) {
 	if err != nil {
 		var uc *domain.UniqueConstraintError
 		if errors.As(err, &uc) {
-			return short, nil
+			return short, uc
 		}
 		return "", err
 	}
