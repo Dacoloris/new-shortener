@@ -16,7 +16,7 @@ var (
 )
 
 type URLRepository interface {
-	Create(ctx context.Context, url domain.URL) error
+	Create(ctx context.Context, url domain.URL) (string, error)
 	GetOriginalByShort(ctx context.Context, short string) (string, error)
 	GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error)
 	CreateBatch(ctx context.Context, urls []domain.URL) error
@@ -41,8 +41,12 @@ func (u *URLs) Create(ctx context.Context, url domain.URL) (string, error) {
 	src := rand.NewSource(time.Now().UnixNano())
 	url.Short = GenerateURLToken(10, src)
 
-	err = u.repo.Create(ctx, url)
+	short, err := u.repo.Create(ctx, url)
 	if err != nil {
+		var uc *domain.UniqueConstraintError
+		if errors.As(err, &uc) {
+			return short, nil
+		}
 		return "", err
 	}
 

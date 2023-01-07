@@ -40,15 +40,15 @@ func New(filename string, logger *zap.Logger) (*Storage, error) {
 	return storage, nil
 }
 
-func (s *Storage) Create(ctx context.Context, url domain.URL) error {
-	err := s.memoryMap.Create(ctx, url)
+func (s *Storage) Create(ctx context.Context, url domain.URL) (string, error) {
+	_, err := s.memoryMap.Create(ctx, url)
 	if err != nil {
-		return err
+		return "", err
 	}
 	var record Record
 	err = s.encoder.Encode(record)
 
-	return err
+	return "", err
 }
 
 func (s *Storage) GetOriginalByShort(ctx context.Context, short string) (string, error) {

@@ -26,7 +26,7 @@ func New(db *sql.DB, dsn string) *Storage {
 	}
 }
 
-func (s *Storage) Create(ctx context.Context, url domain.URL) error {
+func (s *Storage) Create(ctx context.Context, url domain.URL) (string, error) {
 	query := `INSERT INTO urls (user_id, original_url, short_url)
 				  VALUES ($1, $2, $3)`
 
@@ -34,11 +34,15 @@ func (s *Storage) Create(ctx context.Context, url domain.URL) error {
 
 	if err, ok := err.(*pq.Error); ok {
 		if err.Code == pgerrcode.UniqueViolation {
-			return domain.NewUniqueConstraintError(err)
+			queryGetShort := `SELECT short_url FROM urls WHERE original_url=$1`
+			row := s.conn.QueryRowContext(ctx, queryGetShort, url.Original)
+			var short string
+			row.Scan(&short)
+			return short, domain.NewUniqueConstraintError(err)
 		}
 	}
 
-	return err
+	return "", err
 }
 
 func (s *Storage) GetOriginalByShort(ctx context.Context, shortURL string) (string, error) {

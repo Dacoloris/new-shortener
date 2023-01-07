@@ -27,9 +27,9 @@ func NewURLs(lg *zap.Logger) *URLs {
 	}
 }
 
-func (u *URLs) Create(_ context.Context, url domain.URL) error {
+func (u *URLs) Create(_ context.Context, url domain.URL) (string, error) {
 	u.AddRecordToStorage(url)
-	return nil
+	return "", nil
 }
 
 func (u *URLs) GetOriginalByShort(_ context.Context, short string) (string, error) {
