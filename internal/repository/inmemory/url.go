@@ -6,58 +6,67 @@ import (
 	"new-shortner/internal/domain"
 	"sync"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-type Urls struct {
+var (
+	ErrNotFound = errors.New("not found")
+)
+
+type URLs struct {
 	logger  *zap.Logger
-	storage map[uuid.UUID]domain.URL
+	storage map[string]domain.URL
 	mu      sync.RWMutex
 }
 
-func NewUrls(lg *zap.Logger) *Urls {
-	return &Urls{
+func NewURLs(lg *zap.Logger) *URLs {
+	return &URLs{
 		logger:  lg,
-		storage: make(map[uuid.UUID]domain.URL),
+		storage: make(map[string]domain.URL),
 		mu:      sync.RWMutex{},
 	}
 }
 
-func (u *Urls) Create(ctx context.Context, url domain.URL) error {
-	u.mu.Lock()
-	u.storage[url.ID] = url
-	u.mu.Unlock()
-
+func (u *URLs) Create(_ context.Context, url domain.URL) error {
+	u.AddRecordToStorage(url)
 	return nil
 }
 
-func (u *Urls) GetByID(ctx context.Context, id uuid.UUID) (domain.URL, error) {
+func (u *URLs) GetOriginalByShort(_ context.Context, short string) (string, error) {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 
-	url, ok := u.storage[id]
+	url, ok := u.storage[short]
 	if ok {
-		return url, nil
+		return url.Original, nil
 	}
 
-	return domain.URL{}, errors.New("not found")
+	return "", ErrNotFound
 }
 
-func (u *Urls) GetAll(ctx context.Context) ([]domain.URL, error) {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
+func (u *URLs) AddRecordToStorage(url domain.URL) {
+	u.mu.Lock()
+	u.storage[url.Short] = url
+	u.mu.Unlock()
+}
 
-	res := make([]domain.URL, 0, len(u.storage))
-	for _, v := range u.storage {
-		res = append(res, v)
+func (u *URLs) GetAllURLsByUserID(_ context.Context, userID string) ([]domain.URL, error) {
+	res := make([]domain.URL, 0)
+	u.mu.RLock()
+	for _, url := range u.storage {
+		if url.UserID == userID {
+			res = append(res, url)
+		}
 	}
+	u.mu.RUnlock()
 
 	return res, nil
 }
 
-func (u *Urls) Delete(ctx context.Context, id uuid.UUID) error {
-	delete(u.storage, id)
+func (u *URLs) CreateBatch(_ context.Context, urls []domain.URL) error {
+	for _, url := range urls {
+		u.AddRecordToStorage(url)
+	}
 
 	return nil
 }

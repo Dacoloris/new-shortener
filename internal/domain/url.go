@@ -1,9 +1,17 @@
 package domain
 
-import "github.com/google/uuid"
-
 type URL struct {
-	ID       uuid.UUID `json:"id"`
-	Original string    `json:"original"`
-	Short    string    `json:"short"`
+	UserID   string `json:"-"`
+	Short    string `json:"short_url"`
+	Original string `json:"original_url"`
+}
+
+type BatchPostRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	Original      string `json:"original_url"`
+}
+
+type BatchPostResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	Short         string `json:"short_url"`
 }

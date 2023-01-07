@@ -2,50 +2,97 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math/rand"
+	urls "net/url"
 	"new-shortner/internal/domain"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
-type UrlRepository interface {
-	Create(ctx context.Context, book domain.URL) error
-	GetByID(ctx context.Context, id uuid.UUID) (domain.URL, error)
-	GetAll(ctx context.Context) ([]domain.URL, error)
-	Delete(ctx context.Context, id uuid.UUID) error
+var (
+	ErrParseURI = errors.New("parse uri fail")
+)
+
+type URLRepository interface {
+	Create(ctx context.Context, url domain.URL) error
+	GetOriginalByShort(ctx context.Context, short string) (string, error)
+	GetAllURLsByUserID(ctx context.Context, id string) ([]domain.URL, error)
+	CreateBatch(ctx context.Context, urls []domain.URL) error
 }
 
-type Urls struct {
-	repo UrlRepository
+type URLs struct {
+	repo URLRepository
 }
 
-func NewUrls(repo UrlRepository) *Urls {
-	return &Urls{
+func NewURLs(repo URLRepository) *URLs {
+	return &URLs{
 		repo: repo,
 	}
 }
 
-func (u *Urls) Create(ctx context.Context, url domain.URL) error {
-	return u.repo.Create(ctx, url)
-}
+func (u *URLs) Create(ctx context.Context, url domain.URL) (string, error) {
+	_, err := urls.ParseRequestURI(url.Original)
+	if err != nil {
+		return "", ErrParseURI
+	}
 
-func (u *Urls) GetByID(ctx context.Context, id uuid.UUID) (domain.URL, error) {
-	return u.repo.GetByID(ctx, id)
-}
-
-func (u *Urls) GetAll(ctx context.Context) ([]domain.URL, error) {
-	return u.repo.GetAll(ctx)
-}
-
-func (u *Urls) Delete(ctx context.Context, id uuid.UUID) error {
-	return u.repo.Delete(ctx, id)
-}
-
-func (u *Urls) ShortenUrl(_ context.Context) string {
 	src := rand.NewSource(time.Now().UnixNano())
-	return GenerateURLToken(10, src)
+	url.Short = GenerateURLToken(10, src)
+
+	err = u.repo.Create(ctx, url)
+	if err != nil {
+		return "", err
+	}
+
+	return url.Short, nil
+}
+
+func (u *URLs) GetOriginalByShort(ctx context.Context, short string) (string, error) {
+	return u.repo.GetOriginalByShort(ctx, short)
+}
+
+func (u *URLs) GetAllURLsByUserID(ctx context.Context, userID string) ([]domain.URL, error) {
+	if userID == "" {
+		return []domain.URL{}, nil
+	}
+	return u.repo.GetAllURLsByUserID(ctx, userID)
+}
+
+func (u *URLs) CreateBatch(
+	ctx context.Context,
+	req []domain.BatchPostRequest,
+	userID string,
+	baseURL string,
+) ([]domain.BatchPostResponse, error) {
+
+	Urls := make([]domain.URL, 0, len(req))
+	src := rand.NewSource(time.Now().UnixNano())
+
+	for _, elem := range req {
+		var url domain.URL
+		url.UserID = userID
+		url.Original = elem.Original
+		url.Short = GenerateURLToken(10, src)
+		Urls = append(Urls, url)
+	}
+
+	err := u.repo.CreateBatch(ctx, Urls)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]domain.BatchPostResponse, 0, len(req))
+
+	for i := 0; i < len(req); i++ {
+		var elem domain.BatchPostResponse
+		elem.CorrelationID = req[i].CorrelationID
+		elem.Short = fmt.Sprintf("%s/%s", baseURL, Urls[i].Short)
+		res = append(res, elem)
+	}
+
+	return res, nil
 }
 
 // GenerateURLToken generates random base64URL string by given length
