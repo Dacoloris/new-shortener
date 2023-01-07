@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"new-shortner/internal/domain"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/lib/pq"
 )
 
 var (
@@ -28,6 +31,12 @@ func (s *Storage) Create(ctx context.Context, url domain.URL) error {
 				  VALUES ($1, $2, $3)`
 
 	_, err := s.conn.ExecContext(ctx, query, url.UserID, url.Original, url.Short)
+
+	if err, ok := err.(*pq.Error); ok {
+		if err.Code == pgerrcode.UniqueViolation {
+			return domain.NewUniqueConstraintError(err)
+		}
+	}
 
 	return err
 }
